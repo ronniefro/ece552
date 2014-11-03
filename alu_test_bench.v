@@ -1,4 +1,4 @@
-module alu_tb;
+module alu_tb1;
 	reg [15:0] src0, src1;
 	reg [3:0] func, shift_amt;
 	wire [15:0] dst;

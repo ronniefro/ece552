@@ -13,3 +13,7 @@ work/_lib1_4.qpg
 *.qpg
 *.qtl
 *.qdb
+*.bak
+*.wlf
+*.mti
+*.bak
