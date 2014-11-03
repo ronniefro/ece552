@@ -1,4 +1,16 @@
-module fa16bit(input[15:0] A, B, input cin,
+module paddsb16bit(input [15:0] A, B, input cin,
+			output [15:0] S, output cout);
+	
+	fa4bit padd0(.A( A[3:0] ), 	.B( B[3:0] ), 	.cin( cin ), 		.S( S[3:0] ), 	.cout( ripple0 ) );
+	fa4bit padd1(.A( A[7:4] ), 	.B( B[7:4] ), 	.cin( ripple0 ),	.S( S[7:4] ), 	.cout( cout ) );
+
+
+	fa4bit padd2(.A( A[11:8] ), 	.B( B[11:8] ),	.cin( 1'b0 ),	.S( S[11:8] ), 	.cout( ripple2 ) );
+	fa4bit padd3(.A( A[15:12] ), 	.B( B[15:12] ), .cin( ripple2 ),	.S( S[15:12] ), .cout( cout ) );
+
+endmodule
+
+module add16bit(input[15:0] A, B, input cin,
 			output [15:0] S, output cout);
 
 	fa4bit fa0(.A( A[3:0] ), 	.B( B[3:0] ), 	.cin( cin ), 		.S( S[3:0] ), 	.cout( ripple0 ) );
@@ -36,6 +48,49 @@ module fa1bit(input A, B, cin,
 
 endmodule
 
+module paddsb16bit_tb();
+	reg [15:0] A;
+	reg [15:0] B;
+	reg cin;
+	reg COUT_LOWER, COUT_UPPER;
+	reg [7:0] SUM_LOWER;
+	reg [7:0] SUM_UPPER;
+	wire [15:0] S;
+	wire cout;
+	real i;
+
+	initial begin
+		$display("Simulation of 16 Bit Parallel Sub Adder");
+	end
+
+	paddsb16bit DUT(.A(A), .B(B), .cin(cin), .S(S), .cout(cout));
+
+	initial begin
+		A=0; B=0; cin=0;
+	end
+	
+	always @ (A, B, cin)
+		begin
+
+		for(i=0; i < 1000; i = i + 1) begin
+			#1 A = $random;
+			B = $random;
+			assign {COUT_LOWER, SUM_LOWER} = A[7:0] + B[7:0];
+			assign {COUT_UPPER, SUM_UPPER} = A[15:8] + B[15:8];
+			#1
+			//$monitor("%d ns: A + B + cin = %b + %b + %b = cout sum = %b %b", $time, A, B, cin, cout, S);
+			if ({SUM_UPPER, SUM_LOWER} !== S) begin
+				$display("ERROR");
+				$display("SUM = %d", {SUM_UPPER, SUM_LOWER});
+				//$monitor("%d ns: A + B + cin = %b + %b + %b = cout sum = %b %d", $time, A, B, cin, cout, S);
+				$monitor("%g ns: sum = %d", $time, S);
+			end
+		end
+	#10 $stop;
+	end
+
+endmodule
+
 module fa16bit_tb ();
 	reg [15:0] A;
 	reg [15:0] B;
@@ -47,10 +102,10 @@ module fa16bit_tb ();
 	real i;
 
 	initial begin
-		$display("Simulation of Four Bit Full Adder");
+		$display("Simulation of 16 Bit Full Adder");
 	end
 
-	fa16bit DUT(.A(A), .B(B), .cin(cin), .S(S), .cout(cout));
+	add16bit DUT(.A(A), .B(B), .cin(cin), .S(S), .cout(cout));
 
 	initial begin
 		A=0; B=0; cin=0;
