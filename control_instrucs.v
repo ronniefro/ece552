@@ -1,4 +1,4 @@
-module branch(input [2:0] condition, input [8:0] label, input N, V, Z, input [15:0] pc,
+module branch(input [2:0] condition, input signed [8:0] label, input N, V, Z, input [15:0] pc,
 		output reg [15:0] newPc, output reg execBranch);
 	
 	always @ (*) begin
@@ -65,7 +65,16 @@ module branch(input [2:0] condition, input [8:0] label, input N, V, Z, input [15
 endmodule 
 
 
-module jumpandlink();
+module jumpandlink(input signed [8:0] target, input [15:0] pc, input clk, input hlt,
+		output [15:0] newPc);
+	
+	supply0 ZERO;
+	supply1 ONE;
+
+	wire retAddrReg = 4'hF;
+	rf RT(.clk(clk),.p0_addr(ZERO),.p1_addr(ZERO),.p0(ZERO),.p1(ZERO),.re0(ZERO),.re1(ZERO),.dst_addr(retAddrReg),.dst(pc),.we(ONE),.hlt(hlt));
+
+	assign newPc = pc + target;
 
 endmodule
 
