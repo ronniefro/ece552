@@ -13,7 +13,7 @@
 // SLL		0101
 // SRL		0110
 // SRA		0111
-module alu(input [15:0]A, B, input [3:0] shift_amt, opcode, input clk,
+module alu(input [15:0]A, input[15:0] B, input [3:0] shift_amt, opcode, input clk,
 		output reg[15:0] S, output reg N, reg Z, reg V);
 	wire [15:0] andOut, addOut, subOut, paddsbOut, norOut, sllOut, srlOut, sraOut;
 	wire [15:0] subB = ~B;
