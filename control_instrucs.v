@@ -79,11 +79,21 @@ module jumpandlink(input signed [8:0] target, input [15:0] pc, input clk, input 
 endmodule
 
 
-module jumpregister();
-
+module jumpregister(input clk, input[15:0] rs, input hlt, output newPC );
+   // jump to pc location in rs
+   supply0 ZERO;
+   supply1 ONE;
+   rf Rooster(.clk(clk),.p0_addr(rs),.p1_addr(ZERO),.p0(newPC),.p1(ZERO),.re0(ONE),.re1(ZERO),.dst_addr(ZERO),.dst(ZERO),.we(ZERO),.hlt(hlt));
+  
+   
 endmodule
 
 
-module halt();
-
+module halt(input clk);
+   //halt and dump registers
+   supply0 ZERO;
+   supply1 ONE;
+   
+   rf rocky(.clk(clk),.p0_addr(ZERO),.p1_addr(ZERO),.p0(ZERO),.p1(ZERO),.re0(ZERO),.re1(ZERO),.dst_addr(ZERO),.dst(ZERO),.we(ZERO),.hlt(ONE));
+   
 endmodule
