@@ -15,7 +15,7 @@
 // SRA		0111
 module alu(input [15:0]A, B, input [3:0] shift_amt, opcode, input clk,
 		output reg[15:0] S, output reg N, reg Z, reg V);
-	wire [15:0] andOut, addOut, subOut, paddsbOut, norOut, sllOut;
+	wire [15:0] andOut, addOut, subOut, paddsbOut, norOut, sllOut, srlOut, sraOut;
 	wire [15:0] subB = ~B;
 	wire addCout, subCout, paddsbCout;
 	reg addCin = 1'b0;
@@ -27,6 +27,8 @@ module alu(input [15:0]A, B, input [3:0] shift_amt, opcode, input clk,
 	add16bit sub1(.A(A), .B(subB), .cin(subCin), .S(subOut), .cout(subCout));
 	nor16bit nor1(.A(A), .B(B), .out(norOut));
 	sll shifterLeft(.A(A), .shift_amount(shift_amt), .out(sllOut));
+	srl shifterRight(.A(A), .shift_amount(shift_amt), .out(srlOut));
+	sra shifterRightArith(.A(A), .shift_amount(shift_amt), .out(sraOut));
 	always@(posedge clk) begin
 		//ADD
 		if (opcode == 4'b0000) begin
@@ -102,6 +104,20 @@ module alu(input [15:0]A, B, input [3:0] shift_amt, opcode, input clk,
 			if (S == 0) Z = 1'b1;
 			else Z = 1'b0;
 		end
+		//SRL
+		else if (opcode == 4'b0110) begin
+			S = srlOut;
+			//Zero flag
+			if (S == 0) Z = 1'b1;
+			else Z = 1'b0;
+		end
+		//SRA
+		else if (opcode == 4'b0111) begin
+			S = sraOut;
+			//Zero flag
+			if (S == 0) Z = 1'b1;
+			else Z = 1'b0;
+		end
 		else begin
 			S = 16'h0000;
 		end
@@ -170,12 +186,12 @@ module alu_tb;
 		#10 src0= 16'h1111; shift_amt= 16'h0011;
 
 		// Test SRL
-		//#10 func= 4'b0110; src0= 4'h0808; shift_amt= 4'b0001;
-		//#10 src0= 4'h1111; shift_amt= 4'h0011;	
+		#10 func= 4'b0110; src0= 4'h0808; shift_amt= 4'b0001;
+		#10 src0= 4'h1111; shift_amt= 4'h0011;	
 	
 		// Test SRA
-		//#10 func= 4'b0111; src0= 4'h0808; shift_amt= 4'b0001;
-		//#10 src0= 4'hF000; shift_amt= 4'h0100;
+		#10 func= 4'b0111; src0= 4'h0808; shift_amt= 4'b0001;
+		#10 src0= 4'hF000; shift_amt= 4'h0100;
 		#10 $finish;
 	end
 	
