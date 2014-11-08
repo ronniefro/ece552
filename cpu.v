@@ -7,7 +7,7 @@
 module cpu(input clk, rst_n, 
 		output hlt, output [15:0] pc);
 	
-   supply0 ZERO;
+   supply0 ZERO; 
    supply1 ONE;
   
   
@@ -24,7 +24,7 @@ module cpu(input clk, rst_n,
    ////// control regs ////////
    reg ID_EX_REGDST, ID_EX_ALUOP0, ID_EX_ALUOP1, ID_EX_ALUSRC, ID_EX_BRANCH, ID_EX_MEMREAD, ID_EX_MEMWRITE, ID_EX_REGWRITE, ID_EX_MEMTOREG, //ex stage controls
          EX_MEM_BRANCH, EX_MEM_MEMREAD, EX_MEM_MEMWRITE, EX_MEM_REGWRITE, EX_MEM_MEMTOREG, EX_MEM_ALUOP1,
-           MEM_WB_REGWRITE, MEM_WB_MEMTOREG,  EXECUTEBRANCH, EXECUTEJUMP
+           MEM_WB_REGWRITE, MEM_WB_MEMTOREG,  EXECUTEBRANCH, EXECUTEJUMP,
             IF_ID_HLT, ID_EX_HLT, EX_MEM_HLT, MEM_WB_HLT;
    
    ////// flag regs ///////
@@ -39,7 +39,8 @@ module cpu(input clk, rst_n,
    
    ////////// ID/EX ///////////
    assign ID_EX_RS = ID_EX_INST[7:4];
-   assign ID_EX_RT = (ID_EX_INST[15])?ID_EX_INST[11:8]:ID_EX_INST[3:0];
+   assign ID_EX_RT = (ID_EX_INST[15]) ? ID_EX_INST[11:8]:ID_EX_INST[3:0];
+   assign ID_EX_RD = ID_EX_INST[11:8];
    assign ID_EX_OP = ID_EX_INST[15:12];
    assign ID_EX_BRIMM = ID_EX_INST[8:0];
    assign ID_EX_LHLB = ID_EX_INST[7:0];
@@ -57,6 +58,37 @@ module cpu(input clk, rst_n,
    assign MEM_READ_EN =	EX_MEM_MEMREAD; 
    assign MEM_WRITE_EN = EX_MEM_MEMWRITE;
   
+
+     ////////////////////////////////////////////////////////////////////////////////////////////////////////
+	 /////////////////////////////////////////// DATA FORWARDING ////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////// 
+	
+	// Forwarding A from MEM to EX
+   assign ForwardAfromMEM = (ID_EX_RS == EX_MEM_RD) & (ID_EX_RS!=0) & (EX_MEM_OP[3] == 1'b0 || EX_MEM_OP == 4'h8 ||EX_MEM_OP == 4'h9);  	
+   // Forwarding B from MEM to EX
+   assign ForwardBfromMEM = (ID_EX_RT == EX_MEM_RD)&(ID_EX_RD!=0) & (EX_MEM_OP[3] == 1'b0 || EX_MEM_OP == 4'h8 ||EX_MEM_OP == 4'h9); 
+ 	// Forwarding A from WB to EX
+   assign ForwardAfromALUinWB =( ID_EX_RS == MEM_WB_RD) & (ID_EX_RS != 0) & (MEM_WB_OP[3] == 1'b0 || EX_MEM_OP == 4'h8 ||EX_MEM_OP == 4'h9); 
+ 	// Forwarding B from WB to EX
+   assign ForwardBfromALUinWB = (ID_EX_RT == MEM_WB_RD) & (ID_EX_RT != 0) & (MEM_WB_OP[3] == 1'b0 || EX_MEM_OP == 4'h8 ||EX_MEM_OP == 4'h9); 
+ 	// Forwarding A from WB to MEM
+   assign ForwardAfromLWinWB =( ID_EX_RS == MEM_WB_INST[7:4]) & (ID_EX_RS != 0) & (MEM_WB_OP == 4'h8); 
+ 	// Forwarding B from WB to MEM
+   assign ForwardBfromLWinWB = (ID_EX_RT == MEM_WB_INST[7:4]) & (ID_EX_RT != 0) & (MEM_WB_OP == 4'h8); 
+ 	// Forwarding A from MEM to EX or from WB to EX or from ID_EX
+   assign Ain = ForwardAfromMEM? EX_MEM_ALUR :
+   	(ForwardAfromALUinWB | ForwardAfromLWinWB)? MEM_WB_DATA : ID_EX_A;
+ 	// Forwarding  from MEM to EX or from WB to EX or from ID_EX
+   assign Bin = ForwardBfromMEM? EX_MEM_ALUR :
+   	(ForwardBfromALUinWB | ForwardBfromLWinWB)? MEM_WB_DATA : ID_EX_B;
+
+     ////////////////////////////////////////////////////////////////////////////////////////////////////////
+	 /////////////////////////////////////////// HAZARD STALL ///////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////// 
+
+    assign stall = (MEM_WB_INST[15:12] == 4'h8) && // source instruction is a load
+       ((((ID_EX_OP == 4'h8)|(ID_EX_OP == 4'h9)) && (ID_EX_RS == MEM_WB_RD)) | // stall for address calc
+       ((ID_EX_OP[3] == 1'h1 ) && ((ID_EX_RS == MEM_WB_RD)|(ID_EX_RT == MEM_WB_RD)))); // ALU use
   ////////// ALU INPUT /////////// 
    assign A = ID_EX_A;
    assign B = ID_EX_B;
@@ -80,6 +112,8 @@ module cpu(input clk, rst_n,
            PC <= 16'h0000;
        end
        else begin
+       
+       if (~stall) begin 
      ////////////////////////////////////////////////////////////////////////////////////////////////////////
 	 /////////////////////////////////////////// IF OPERATIONS //////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////////////////////////// 
@@ -161,7 +195,7 @@ module cpu(input clk, rst_n,
        /// end control options /////////
        ///// end ID ////////////////////
        
-     ////////////////////////////////////////////////////////////////////////////////////////////////////////
+          ////////////////////////////////////////////////////////////////////////////////////////////////////////
 	 /////////////////////////////////////////// EX OPERATIONS //////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////////////////////////// 
         
@@ -178,7 +212,7 @@ module cpu(input clk, rst_n,
        EX_MEM_B <= B;
        EX_MEM_INST <= ID_EX_INST;
        
-     ////////////////////////////////////////////////////////////////////////////////////////////////////////
+          ////////////////////////////////////////////////////////////////////////////////////////////////////////
 	 /////////////////////////////////////////// ALU OPERATIONS /////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////////////////////////// 
       if(ID_EX_ALUOP0 == 1'b0 && ID_EX_ALUOP1 == 1'b0) begin
@@ -203,7 +237,7 @@ module cpu(input clk, rst_n,
       end
       
 
-     ////////////////////////////////////////////////////////////////////////////////////////////////////////
+          ////////////////////////////////////////////////////////////////////////////////////////////////////////
 	 /////////////////////////////////////////// MEM OPERATIONS /////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////////  
    
@@ -261,8 +295,23 @@ module cpu(input clk, rst_n,
 		REG_WB_ADDR <= MEM_WB_RD;
 
         end
+ 	 	end//end stall
+ 	 	else begin 
+ 	 	    EX_MEM_INST <= 16'h0000; //send "nop" which is actually just adding zero reg to itself
+          
+          /////////////// NEW MEM ///////////////////
+          MEM_WB_INST <= EX_MEM_INST; //pass Instruction
+          
+          if (EX_MEM_OP[3] == 1'b0) MEM_WB_DATA <= EX_MEM_ALUR; // ALU result
+          else if (EX_MEM_OP == 4'h8) MEM_WB_DATA <= MEM_RDDATA; 
+          else if (EX_MEM_OP == 4'h9)MEM_WRDATA <= EX_MEM_B; //store 
+          // the WB stage
+          if ((MEM_WB_OP[3] == 1'h1) & (MEM_WB_RD != 0)) REG_WB <= MEM_WB_DATA; // ALU operation
+          else if ((EX_MEM_OP == 4'h8)& (MEM_WB_RT != 0)) REG_WB <= MEM_WB_DATA;
+ 	 	end// end stall else
  	 	
-end
-        end //end always
+    end// end rst_n
+
+end //end always
 
 endmodule
