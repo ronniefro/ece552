@@ -92,7 +92,11 @@ module cpu(input clk, rst_n,
   ////////// ALU INPUT /////////// 
    assign A = ID_EX_A;
    assign B = ID_EX_B;
-   
+    
+     ////////////////////////////////////////////////////////////////////////////////////////////////////////
+	 /////////////////////////////////////////// INITALIZATIONS /////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////// 
+
    DM memory(.clk(clk),.addr(MEMADDR),.re(MEM_READ_EN),.we(MEM_WRITE_EN),.wrt_data(MEM_WRDATA),.rd_data(MEM_RDDATA));
    
    IM pcAddr(.clk(clk),.addr(PC),.rd_en(ONE),.instr(instruction));
@@ -107,6 +111,9 @@ module cpu(input clk, rst_n,
    branch br(.condition(EX_MEM_INST[11:9]),.label(EX_MEM_INST[8:0]), .N(N), .V(V), .Z(Z), .pc(ID_EX_PC),
 		.newPc(EX_MEM_NEWPC), .execBranch(EXECUTEBRANCH));
 
+
+   ////////// ALWAYS BLOCK //////////
+    
    always@(posedge clk or negedge rst_n) begin
        if(!rst_n)begin
            PC <= 16'h0000;
@@ -122,6 +129,33 @@ module cpu(input clk, rst_n,
        IF_ID_INST <= instruction;
        PC <= (EXECUTEBRANCH | EXECUTEJUMP) ? EX_MEM_NEWPC : PC+4;
        IF_ID_PC <= PC;
+       
+       
+              
+     ////////////////////////////////////////////////////////////////////////////////////////////////////////
+	 //////////////////////////////////////// FLUSH ON BR,JR,JAL ////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////// 
+       if((EXECUTEBRANCH | EXECUTEJUMP) == 1'b1)begin
+           IF_ID_INST <= 16'h0000;
+           IF_ID_A <= 16'h0000;
+           IF_ID_B <= 16'h0000;
+           IF_ID_PC <= 16'h0000;
+           ID_EX_HLT <= 1'h0; 
+           ID_EX_A <= 16'h0000;
+           ID_EX_B <= 16'h0000;
+           ID_EX_INST <= 16'h0000;
+           ID_EX_PC <= 16'h0000;
+           EX_MEM_HLT <= 1'h0; 
+           EX_MEM_BRANCH <= 1'h0;
+           EX_MEM_MEMREAD <= 1'h0;
+           EX_MEM_MEMWRITE <= 1'h0;
+           EX_MEM_REGWRITE <= 1'h0;
+           EX_MEM_MEMTOREG <= 1'h0;
+           EX_MEM_ALUOP1 <= 1'h0;
+           EX_MEM_PC4 <= 16'h0000;
+           EX_MEM_B <= 16'h0000;
+           EX_MEM_INST <= 16'h0000;
+       end
        //////// END IF /////////////
        
      ////////////////////////////////////////////////////////////////////////////////////////////////////////
