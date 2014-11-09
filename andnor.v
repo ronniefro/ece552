@@ -22,7 +22,7 @@ module nor16bit(input [15:0] A, B,
 		output [15:0] out);
 	assign out = ~(A|B);
 endmodule
-
+/*
 module and16bit_tb ();
 	reg [15:0] A;
 	reg [15:0] B;
@@ -100,3 +100,4 @@ module nor16bit_tb ();
 	end
 
 endmodule
+*/

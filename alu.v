@@ -125,7 +125,7 @@ module alu(input [15:0]A, input[15:0] B, input [3:0] shift_amt, opcode, input cl
 	end
 
 endmodule
-
+/*
 module alu_tb;
 	reg signed [15:0] src0, src1;
 	reg [3:0] func, shift_amt;
@@ -196,4 +196,4 @@ module alu_tb;
 	end
 	
 endmodule
-
+*/

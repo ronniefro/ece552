@@ -47,7 +47,7 @@ module fa1bit(input A, B, cin,
 	xor (S, A, B, cin);
 
 endmodule
-
+/*
 module paddsb16bit_tb();
 	reg [15:0] A;
 	reg [15:0] B;
@@ -190,3 +190,4 @@ module fa1bit_tb ();
 		end
 
 endmodule
+*/
